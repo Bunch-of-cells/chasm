@@ -1,14 +1,15 @@
-use std::{fmt::Display, rc::Rc};
+use std::{
+    fmt::{Debug, Display},
+    rc::Rc,
+};
 
-use crate::token::Token;
-
-pub type Result<T> = core::result::Result<T, Exception>;
+pub type Result<T> = core::result::Result<T, Box<dyn Exception>>;
 
 #[derive(Debug, Clone)]
 pub struct Position {
-    line: usize,
-    column: (usize, usize),
-    file: Rc<String>,
+    pub line: usize,
+    pub column: (usize, usize),
+    pub file: Rc<String>,
 }
 
 impl Position {
@@ -27,61 +28,197 @@ impl Display for Position {
     }
 }
 
-#[derive(Debug)]
-pub struct Exception {
-    position: Position,
-    exception: ExceptionType,
-    details: String,
+pub trait Exception {
+    fn error(&self) -> &'static str;
+    fn details(&self) -> &str;
+    fn file(&self) -> Option<&str>;
+    fn position(&self) -> Option<(usize, usize, usize)>; // line, col start, col end
 }
 
-impl Exception {
-    pub fn new(
-        exception: ExceptionType,
-        file: Rc<String>,
-        line: usize,
-        column: (usize, usize),
-        details: String,
-    ) -> Exception {
-        Self {
-            position: Position { line, column, file },
-            exception,
-            details,
-        }
-    }
-
-    pub fn from_token(exception: ExceptionType, token: &Token, details: String) -> Self {
-        Self::new(
-            exception,
-            Rc::clone(&token.position.file),
-            token.position.line,
-            token.position.column,
-            details,
-        )
-    }
-}
-
-impl Display for Exception {
+impl Display for dyn Exception {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Compiler Exception: {:?} :: file: {} :: line: {} :: column: {} to {} :: {}",
-            self.exception,
-            self.position.file,
-            self.position.line,
-            self.position.column.0,
-            self.position.column.1,
-            self.details,
-        )
+        write!(f, "Compiler Exception: {} :: ", self.error())?;
+        if let Some(file) = self.file() {
+            write!(f, "file: {} :: ", file)?;
+        }
+        if let Some((line, col_start, col_end)) = self.position() {
+            write!(
+                f,
+                "line: {} :: column: {} to {} :: ",
+                line, col_start, col_end
+            )?;
+        }
+        write!(f, "{}", self.details())
     }
 }
 
-#[derive(Debug)]
-pub enum ExceptionType {
-    NumberOverflow,
-    InvalidToken,
-    UnknownException,
-    SyntaxError,
-    // TooMuchRecursion,
-    FileException,
-    MprocessorException,
+pub struct NumberOverflow(pub String, pub Position);
+impl Exception for NumberOverflow {
+    fn error(&self) -> &'static str {
+        "Number Overflow"
+    }
+
+    fn details(&self) -> &str {
+        &self.0
+    }
+
+    fn file(&self) -> Option<&str> {
+        Some(self.1.file.as_str())
+    }
+
+    fn position(&self) -> Option<(usize, usize, usize)> {
+        Some((self.1.line, self.1.column.0, self.1.column.1))
+    }
+}
+
+pub struct InvalidToken(pub String, pub Position);
+impl Exception for InvalidToken {
+    fn error(&self) -> &'static str {
+        "Invalid Token"
+    }
+
+    fn details(&self) -> &str {
+        &self.0
+    }
+
+    fn file(&self) -> Option<&str> {
+        Some(self.1.file.as_str())
+    }
+
+    fn position(&self) -> Option<(usize, usize, usize)> {
+        Some((self.1.line, self.1.column.0, self.1.column.1))
+    }
+}
+
+pub struct UnknownException(pub String, pub Position);
+impl Exception for UnknownException {
+    fn error(&self) -> &'static str {
+        "Unknown Exception"
+    }
+
+    fn details(&self) -> &str {
+        &self.0
+    }
+
+    fn file(&self) -> Option<&str> {
+        Some(self.1.file.as_str())
+    }
+
+    fn position(&self) -> Option<(usize, usize, usize)> {
+        Some((self.1.line, self.1.column.0, self.1.column.1))
+    }
+}
+
+pub struct SyntaxError(pub String, pub Position);
+impl Exception for SyntaxError {
+    fn error(&self) -> &'static str {
+        "Syntax Error"
+    }
+
+    fn details(&self) -> &str {
+        &self.0
+    }
+
+    fn file(&self) -> Option<&str> {
+        Some(self.1.file.as_str())
+    }
+
+    fn position(&self) -> Option<(usize, usize, usize)> {
+        Some((self.1.line, self.1.column.0, self.1.column.1))
+    }
+}
+
+pub struct FileException(pub String, pub Position);
+impl Exception for FileException {
+    fn error(&self) -> &'static str {
+        "File Exception"
+    }
+
+    fn details(&self) -> &str {
+        &self.0
+    }
+
+    fn file(&self) -> Option<&str> {
+        Some(self.1.file.as_str())
+    }
+
+    fn position(&self) -> Option<(usize, usize, usize)> {
+        Some((self.1.line, self.1.column.0, self.1.column.1))
+    }
+}
+
+pub struct MprocessorException(pub String, pub Position);
+impl Exception for MprocessorException {
+    fn error(&self) -> &'static str {
+        "Mprocessor Exception"
+    }
+
+    fn details(&self) -> &str {
+        &self.0
+    }
+
+    fn file(&self) -> Option<&str> {
+        Some(self.1.file.as_str())
+    }
+
+    fn position(&self) -> Option<(usize, usize, usize)> {
+        Some((self.1.line, self.1.column.0, self.1.column.1))
+    }
+}
+
+pub struct NoMain(pub Rc<String>);
+impl Exception for NoMain {
+    fn error(&self) -> &'static str {
+        "No Main"
+    }
+
+    fn details(&self) -> &str {
+        "No Main function was found"
+    }
+
+    fn file(&self) -> Option<&str> {
+        Some(self.0.as_str())
+    }
+
+    fn position(&self) -> Option<(usize, usize, usize)> {
+        None
+    }
+}
+
+pub struct Undefined(pub String, pub Position);
+impl Exception for Undefined {
+    fn error(&self) -> &'static str {
+        "Undefined Label"
+    }
+
+    fn details(&self) -> &str {
+        &self.0
+    }
+
+    fn file(&self) -> Option<&str> {
+        Some(self.1.file.as_str())
+    }
+
+    fn position(&self) -> Option<(usize, usize, usize)> {
+        Some((self.1.line, self.1.column.0, self.1.column.1))
+    }
+}
+
+pub struct Redefinition(pub String, pub Position);
+impl Exception for Redefinition {
+    fn error(&self) -> &'static str {
+        "Redefinition"
+    }
+
+    fn details(&self) -> &str {
+        &self.0
+    }
+
+    fn file(&self) -> Option<&str> {
+        Some(self.1.file.as_str())
+    }
+
+    fn position(&self) -> Option<(usize, usize, usize)> {
+        Some((self.1.line, self.1.column.0, self.1.column.1))
+    }
 }

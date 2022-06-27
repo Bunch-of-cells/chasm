@@ -1,5 +1,7 @@
 use crate::{
-    exception::{Exception, ExceptionType, Result},
+    exception::{
+        Exception, InvalidToken, NumberOverflow, Position, Result, SyntaxError, UnknownException,
+    },
     token::{Command, MprocessorDirective, Token, TokenType},
 };
 use std::{num::IntErrorKind, rc::Rc};
@@ -86,23 +88,17 @@ pub fn lex(input: &str, filename: Rc<String>) -> Result<Vec<Token>> {
                                 (i, i + 3),
                             )),
                             _ => {
-                                return Err(Exception::new(
-                                    ExceptionType::InvalidToken,
-                                    Rc::clone(&filename),
-                                    line,
-                                    (i, i + 2),
+                                return Err(Box::new(InvalidToken(
                                     format!("Invalid preprocessor directive '#{}'", c),
-                                ))
+                                    Position::new(line, (i, i + 2), Rc::clone(&filename)),
+                                )))
                             }
                         },
                         None => {
-                            return Err(Exception::new(
-                                ExceptionType::SyntaxError,
-                                Rc::clone(&filename),
-                                line,
-                                (i, i + 1),
+                            return Err(Box::new(SyntaxError(
                                 "Expected+ or - after %#".to_string(),
-                            ))
+                                Position::new(line, (i, i + 1), Rc::clone(&filename)),
+                            )))
                         }
                     },
                     '?' => match chars.next() {
@@ -132,23 +128,17 @@ pub fn lex(input: &str, filename: Rc<String>) -> Result<Vec<Token>> {
                                 (i, i + 3),
                             )),
                             _ => {
-                                return Err(Exception::new(
-                                    ExceptionType::InvalidToken,
-                                    Rc::clone(&filename),
-                                    line,
-                                    (i, i + 2),
+                                return Err(Box::new(InvalidToken(
                                     format!("Invalid preprocessor directive '%{}'", c),
-                                ))
+                                    Position::new(line, (i, i + 2), Rc::clone(&filename)),
+                                )))
                             }
                         },
                         None => {
-                            return Err(Exception::new(
-                                ExceptionType::SyntaxError,
-                                Rc::clone(&filename),
-                                line,
-                                (i, i + 1),
+                            return Err(Box::new(SyntaxError(
                                 "Expected #, !, | or - after %?".to_string(),
-                            ))
+                                Position::new(line, (i, i + 1), Rc::clone(&filename)),
+                            )))
                         }
                     },
                     '!' => tokens.push(Token::new(
@@ -158,23 +148,17 @@ pub fn lex(input: &str, filename: Rc<String>) -> Result<Vec<Token>> {
                         (i, i + 2),
                     )),
                     _ => {
-                        return Err(Exception::new(
-                            ExceptionType::SyntaxError,
-                            Rc::clone(&filename),
-                            line,
-                            (i, i + 2),
+                        return Err(Box::new(SyntaxError(
                             format!("Invalid preprocessor directive '{}'", c),
-                        ))
+                            Position::new(line, (i, i + 2), Rc::clone(&filename)),
+                        )))
                     }
                 },
                 None => {
-                    return Err(Exception::new(
-                        ExceptionType::SyntaxError,
-                        Rc::clone(&filename),
-                        line,
-                        (i, i + 1),
+                    return Err(Box::new(SyntaxError(
                         "Expected a preprocessor directive after %".to_string(),
-                    ))
+                        Position::new(line, (i, i + 1), Rc::clone(&filename)),
+                    )));
                 }
             },
             _ if c.is_digit(10) => {
@@ -211,40 +195,31 @@ pub fn lex(input: &str, filename: Rc<String>) -> Result<Vec<Token>> {
                 tokens.push(Token::new(
                     TokenType::Number(match u16::from_str_radix(&num, base) {
                         Ok(num) if num > 0xFFF => {
-                            return Err(Exception::new(
-                                ExceptionType::NumberOverflow,
-                                Rc::clone(&filename),
-                                line,
-                                (start, end),
+                            return Err(Box::new(NumberOverflow(
                                 format!("Number {} is too large", num),
-                            ))
+                                Position::new(line, (start, end), Rc::clone(&filename)),
+                            )))
                         }
                         Ok(num) => num,
                         Err(err) => {
-                            let (exception, details) = match err.kind() {
-                                IntErrorKind::InvalidDigit => (
-                                    ExceptionType::SyntaxError,
+                            let pos = Position::new(line, (start, end), Rc::clone(&filename));
+                            let exception: Box<dyn Exception> = match err.kind() {
+                                IntErrorKind::InvalidDigit => Box::new(SyntaxError(
                                     format!("Invalid digit found while parsing number '{}'", num),
+                                    pos,
+                                )),
+                                IntErrorKind::PosOverflow | IntErrorKind::NegOverflow => Box::new(
+                                    NumberOverflow(format!("Number '{}' is too large", num), pos),
                                 ),
-                                IntErrorKind::PosOverflow | IntErrorKind::NegOverflow => (
-                                    ExceptionType::NumberOverflow,
-                                    format!("Number '{}' is too large", num),
-                                ),
-                                _ => (
-                                    ExceptionType::UnknownException,
+                                _ => Box::new(UnknownException(
                                     format!(
                                         "An unknown excpetion occured while parsing number '{}'",
                                         num
                                     ),
-                                ),
+                                    pos,
+                                )),
                             };
-                            return Err(Exception::new(
-                                exception,
-                                Rc::clone(&filename),
-                                line,
-                                (start, end),
-                                details,
-                            ));
+                            return Err(exception);
                         }
                     }),
                     Rc::clone(&filename),
@@ -292,23 +267,17 @@ pub fn lex(input: &str, filename: Rc<String>) -> Result<Vec<Token>> {
                 {
                     tokens.push(Token::new(token, Rc::clone(&filename), line, (start, end)));
                 } else {
-                    return Err(Exception::new(
-                        ExceptionType::InvalidToken,
-                        Rc::clone(&filename),
-                        line,
-                        (start, end),
+                    return Err(Box::new(InvalidToken(
                         format!("Invalid token found while parsing '{}'", word),
-                    ));
+                        Position::new(line, (start, end), Rc::clone(&filename)),
+                    )));
                 }
             }
             _ => {
-                return Err(Exception::new(
-                    ExceptionType::InvalidToken,
-                    Rc::clone(&filename),
-                    line,
-                    (i, i + 1),
+                return Err(Box::new(InvalidToken(
                     format!("Invalid token found while parsing '{}'", c),
-                ));
+                    Position::new(line, (i, i + 1), Rc::clone(&filename)),
+                )));
             }
         }
     }
