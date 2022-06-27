@@ -5,13 +5,17 @@ fn main() {
         fs::read_to_string("example.chasm").unwrap().as_str(),
         Rc::new(String::from("example.chasm")),
     ) {
-        Ok(tokens) => println!("{:?}", tokens),
+        Ok(tokens) => match parser::Parser::new(tokens).parse() {
+            Ok(ast) => println!("{:?}", ast),
+            Err(err) => println!("{}", err),
+        },
         Err(err) => println!("{}", err),
     }
 }
 
 mod exception;
 mod lexer;
+mod node;
 mod parser;
 mod token;
 

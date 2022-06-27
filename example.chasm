@@ -1,8 +1,3 @@
-%+; loop.chasm 
-main:
-    CALL add_v0_v1
-    CALL loop
-
-add_v0_v1:
-    ADD v0 v1
-    RET
+%?#; Include loop yea
+%+ ; loop.chasm 
+%?-;

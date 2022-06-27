@@ -1,6 +1,10 @@
 use std::{fmt::Display, rc::Rc};
 
-#[derive(Debug)]
+use crate::token::Token;
+
+pub type Result<T> = core::result::Result<T, Exception>;
+
+#[derive(Debug, Clone)]
 pub struct Position {
     line: usize,
     column: (usize, usize),
@@ -44,6 +48,16 @@ impl Exception {
             details,
         }
     }
+
+    pub fn from_token(exception: ExceptionType, token: &Token, details: String) -> Self {
+        Self::new(
+            exception,
+            Rc::clone(&token.position.file),
+            token.position.line,
+            token.position.column,
+            details,
+        )
+    }
 }
 
 impl Display for Exception {
@@ -68,6 +82,6 @@ pub enum ExceptionType {
     UnknownException,
     SyntaxError,
     // TooMuchRecursion,
-    // FileNotFound,
-    // PreprocessorException,
+    FileException,
+    MprocessorException,
 }

@@ -1,12 +1,12 @@
 use crate::{
-    exception::{Exception, ExceptionType},
-    token::{Keyword, PreprocessorDirective, Token, TokenType},
+    exception::{Exception, ExceptionType, Result},
+    token::{Command, MprocessorDirective, Token, TokenType},
 };
 use std::{num::IntErrorKind, rc::Rc};
 
 const LITERALS: &str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
 
-pub fn lex(input: &str, filename: Rc<String>) -> Result<Vec<Token>, Exception> {
+pub fn lex(input: &str, filename: Rc<String>) -> Result<Vec<Token>> {
     println!("{}", input);
     let mut tokens = Vec::new();
     let mut chars = input.chars().enumerate().peekable();
@@ -66,7 +66,7 @@ pub fn lex(input: &str, filename: Rc<String>) -> Result<Vec<Token>, Exception> {
             '%' => match chars.next() {
                 Some((_, c)) => match c {
                     '+' => tokens.push(Token::new(
-                        TokenType::PreprocessorDirective(PreprocessorDirective::P_include),
+                        TokenType::MprocessorDirective(MprocessorDirective::M_include),
                         Rc::clone(&filename),
                         line,
                         (i, i + 2),
@@ -74,13 +74,13 @@ pub fn lex(input: &str, filename: Rc<String>) -> Result<Vec<Token>, Exception> {
                     '#' => match chars.next() {
                         Some((_, c)) => match c {
                             '+' => tokens.push(Token::new(
-                                TokenType::PreprocessorDirective(PreprocessorDirective::P_define),
+                                TokenType::MprocessorDirective(MprocessorDirective::M_define),
                                 Rc::clone(&filename),
                                 line,
                                 (i, i + 3),
                             )),
                             '-' => tokens.push(Token::new(
-                                TokenType::PreprocessorDirective(PreprocessorDirective::P_undef),
+                                TokenType::MprocessorDirective(MprocessorDirective::M_undef),
                                 Rc::clone(&filename),
                                 line,
                                 (i, i + 3),
@@ -108,25 +108,25 @@ pub fn lex(input: &str, filename: Rc<String>) -> Result<Vec<Token>, Exception> {
                     '?' => match chars.next() {
                         Some((_, c)) => match c {
                             '#' => tokens.push(Token::new(
-                                TokenType::PreprocessorDirective(PreprocessorDirective::P_ifdef),
+                                TokenType::MprocessorDirective(MprocessorDirective::M_ifdef),
                                 Rc::clone(&filename),
                                 line,
                                 (i, i + 3),
                             )),
                             '!' => tokens.push(Token::new(
-                                TokenType::PreprocessorDirective(PreprocessorDirective::P_ifndef),
+                                TokenType::MprocessorDirective(MprocessorDirective::M_ifndef),
                                 Rc::clone(&filename),
                                 line,
                                 (i, i + 3),
                             )),
                             '|' => tokens.push(Token::new(
-                                TokenType::PreprocessorDirective(PreprocessorDirective::P_else),
+                                TokenType::MprocessorDirective(MprocessorDirective::M_else),
                                 Rc::clone(&filename),
                                 line,
                                 (i, i + 3),
                             )),
                             '-' => tokens.push(Token::new(
-                                TokenType::PreprocessorDirective(PreprocessorDirective::P_endif),
+                                TokenType::MprocessorDirective(MprocessorDirective::M_endif),
                                 Rc::clone(&filename),
                                 line,
                                 (i, i + 3),
@@ -152,7 +152,7 @@ pub fn lex(input: &str, filename: Rc<String>) -> Result<Vec<Token>, Exception> {
                         }
                     },
                     '!' => tokens.push(Token::new(
-                        TokenType::PreprocessorDirective(PreprocessorDirective::P_error),
+                        TokenType::MprocessorDirective(MprocessorDirective::M_error),
                         Rc::clone(&filename),
                         line,
                         (i, i + 2),
@@ -277,7 +277,7 @@ pub fn lex(input: &str, filename: Rc<String>) -> Result<Vec<Token>, Exception> {
                         }
                     })
                     .or_else(|| {
-                        Keyword::all()
+                        Command::all()
                             .into_iter()
                             .find(|cmd| word == format!("{:?}", cmd))
                             .map(TokenType::Command)
