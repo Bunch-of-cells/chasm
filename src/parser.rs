@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fs, rc::Rc, mem};
+use std::{collections::HashSet, fs, mem, rc::Rc, vec};
 
 use crate::{
     exception::{Exception, ExceptionType, Result},
@@ -133,7 +133,7 @@ impl Parser {
                 MprocessorDirective::M_define if !ignore => {
                     let arg = arg.to_string();
                     self.defined.insert(arg);
-                },
+                }
                 MprocessorDirective::M_undef if !ignore => {
                     let arg = arg.to_string();
                     if !self.defined.remove(&arg) {
@@ -143,7 +143,7 @@ impl Parser {
                             format!("Undefined flag: {}", arg),
                         ));
                     }
-                },
+                }
                 MprocessorDirective::M_ifdef => {
                     let b = self.defined.contains(arg);
                     self.ifs.push(b);
@@ -151,7 +151,7 @@ impl Parser {
                 MprocessorDirective::M_ifndef => {
                     let b = !self.defined.contains(arg);
                     self.ifs.push(b);
-                },
+                }
                 MprocessorDirective::M_else => {
                     if let Some(c) = self.ifs.last_mut() {
                         *c = !*c;
@@ -180,6 +180,25 @@ impl Parser {
     }
 
     fn command(&mut self) -> Result<()> {
+        let command = self.current_token().clone();
+        self.advance();
+        let mut args = vec![];
+        while !matches!(
+            self.current_token().token,
+            TokenType::Comment(_) | TokenType::Eol | TokenType::Eof
+        ) {
+            args.push(self.current_token().token.clone());
+            self.advance();
+        }
+        if let TokenType::Command(ref c) = command.token {
+            if !c.is_valid_chip8_instruction(&args) {
+                return Err(Exception::from_token(
+                    ExceptionType::SyntaxError,
+                    &command,
+                    format!("Invalid arguments to command {:?}", c),
+                ));
+            }
+        }
         self.advance();
         Ok(())
     }

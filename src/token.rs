@@ -68,4 +68,22 @@ impl Command {
             Command::RET,
         ]
     }
+
+    pub fn is_valid_chip8_instruction(&self, args: &[TokenType]) -> bool {
+        matches!(
+            (self, args),
+            (
+                Command::ADD,
+                [TokenType::Register(_), TokenType::Number(0..=0xFF)]
+            ) | (
+                Command::JMPNE,
+                [
+                    TokenType::Register(_),
+                    TokenType::Number(0..=0xFF) | TokenType::Register(_)
+                ],
+            ) | (Command::RET, [])
+                | (Command::CALL, [TokenType::Label(_)])
+                | (Command::JMP, [TokenType::Number(_)])
+        )
+    }
 }
