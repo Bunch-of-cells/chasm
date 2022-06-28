@@ -1,12 +1,14 @@
 use std::{fs, rc::Rc};
 
+use intruction::convert_to_chip8;
+
 fn main() {
     match lexer::lex(
         fs::read_to_string("example.chasm").unwrap().as_str(),
         Rc::new(String::from("example.chasm")),
     ) {
         Ok(tokens) => match parser::Parser::new(tokens).parse() {
-            Ok(ast) => println!("{:?}", ast),
+            Ok(ast) => println!("{:?}", convert_to_chip8(ast)),
             Err(err) => println!("{}", err),
         },
         Err(err) => println!("{}", err),

@@ -73,14 +73,10 @@ impl Command {
         matches!(
             (self, args),
             (
-                Command::ADD,
-                [TokenType::Register(_), TokenType::Register(_)]
-            ) | (
-                Command::JMPNE | Command::ADD,
-                [
-                    TokenType::Number(0..=0xFF) | TokenType::Register(_),
-                    TokenType::Number(0..=0xFF) | TokenType::Register(_)
-                ],
+                Command::ADD | Command::JMPNE,
+                [TokenType::Number(0..=0xFF), TokenType::Register(_)]
+                    | [TokenType::Register(_), TokenType::Number(0..=0xFF)]
+                    | [TokenType::Register(_), TokenType::Register(_)]
             ) | (Command::RET, [])
                 | (
                     Command::CALL | Command::JMP,

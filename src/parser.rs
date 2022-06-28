@@ -79,15 +79,16 @@ impl Parser {
     }
 
     fn convert_instructions(&self) -> Vec<(Command, Vec<InstructionArg>)> {
-        let mut instructions = Vec::new();
-        instructions.push((
-            Command::CALL,
-            vec![InstructionArg::Label(self.labels["main"] as u16)],
-        ));
-        instructions.push((
-            Command::JMP,
-            vec![InstructionArg::Label((self.instructions.len() + 1) as u16)],
-        ));
+        let mut instructions = vec![
+            (
+                Command::CALL,
+                vec![InstructionArg::Label(self.labels["main"] as u16)],
+            ),
+            (
+                Command::JMP,
+                vec![InstructionArg::Label((self.instructions.len() + 1) as u16)],
+            ),
+        ];
         for (cmd, args) in &self.instructions {
             let mut new_args = Vec::new();
             for arg in args {
