@@ -82,12 +82,9 @@ impl Parser {
         let mut instructions = vec![
             (
                 Command::CALL,
-                vec![InstructionArg::Label(self.labels["main"] as u16)],
+                vec![InstructionArg::Label(self.labels["main"] as u16 + 2)],
             ),
-            (
-                Command::JMP,
-                vec![InstructionArg::Label((self.instructions.len() + 1) as u16)],
-            ),
+            (Command::JMP, vec![InstructionArg::Label(1)]),
         ];
         for (cmd, args) in &self.instructions {
             let mut new_args = Vec::new();
@@ -103,10 +100,6 @@ impl Parser {
             }
             instructions.push((cmd.clone(), new_args));
         }
-        instructions.push((
-            Command::JMP,
-            vec![InstructionArg::Label((self.instructions.len() + 1) as u16)],
-        ));
         instructions
     }
 
@@ -169,7 +162,7 @@ impl Parser {
             TokenType::Label(ref l) if !ignore => {
                 let l = l.clone();
                 if let Some(k) = self.labels.get_mut(&l) {
-                    *k = self.instructions.len() + 1;
+                    *k = self.instructions.len();
                     self.unassigned_label = Some(self.current_token);
                 }
                 self.advance(); // colon

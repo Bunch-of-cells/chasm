@@ -8,7 +8,13 @@ fn main() {
         Rc::new(String::from("example.chasm")),
     ) {
         Ok(tokens) => match parser::Parser::new(tokens).parse() {
-            Ok(ast) => println!("{:?}", convert_to_chip8(ast)),
+            Ok(instructions) => {
+                println!("{:?}", instructions);
+                convert_to_chip8(instructions)
+                    .iter()
+                    .for_each(|i| print!("{i:0>4X} "));
+                println!();
+            }
             Err(err) => println!("{}", err),
         },
         Err(err) => println!("{}", err),

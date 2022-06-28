@@ -39,10 +39,36 @@ pub enum TokenType {
 #[allow(clippy::upper_case_acronyms)]
 pub enum Command {
     JMPNE,
+    JMPEQ,
     JMP,
     ADD,
     CALL,
     RET,
+    CLR,
+    SET,
+    RAND,
+    DRAW,
+    OR,
+    AND,
+    XOR,
+    SUB,
+    SUBFROM,
+    SHR,
+    SHL,
+    LOAD,
+    STORE,
+    POINT,
+    ADDPTR,
+    SETPTRCHR,
+    SETPTRDEC,
+    GETDELAY,
+    GETKEY,
+    SETDELAY,
+    SETSOUND,
+
+    OFFJMP,
+    JMPEQKEY,
+    JMPNEKEY,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -59,13 +85,38 @@ pub enum MprocessorDirective {
 }
 
 impl Command {
-    pub fn all() -> [Command; 5] {
+    pub fn all() -> [Command; 30] {
         [
             Command::JMPNE,
+            Command::JMPEQ,
             Command::JMP,
             Command::ADD,
             Command::CALL,
             Command::RET,
+            Command::CLR,
+            Command::SET,
+            Command::RAND,
+            Command::DRAW,
+            Command::OR,
+            Command::AND,
+            Command::XOR,
+            Command::SUB,
+            Command::SUBFROM,
+            Command::SHR,
+            Command::SHL,
+            Command::LOAD,
+            Command::STORE,
+            Command::POINT,
+            Command::ADDPTR,
+            Command::SETPTRCHR,
+            Command::SETPTRDEC,
+            Command::OFFJMP,
+            Command::GETDELAY,
+            Command::GETKEY,
+            Command::SETDELAY,
+            Command::SETSOUND,
+            Command::JMPEQKEY,
+            Command::JMPNEKEY,
         ]
     }
 
@@ -73,15 +124,59 @@ impl Command {
         matches!(
             (self, args),
             (
-                Command::ADD | Command::JMPNE,
+                Command::ADD | Command::JMPNE | Command::JMPEQ,
                 [TokenType::Number(0..=0xFF), TokenType::Register(_)]
                     | [TokenType::Register(_), TokenType::Number(0..=0xFF)]
                     | [TokenType::Register(_), TokenType::Register(_)]
-            ) | (Command::RET, [])
+            ) | (Command::RET | Command::CLR, [])
                 | (
-                    Command::CALL | Command::JMP,
-                    [TokenType::Label(_) | TokenType::Number(0..=0xFFF)]
+                    Command::CALL | Command::JMP | Command::OFFJMP,
+                    [TokenType::Label(_) | TokenType::Number(_)]
                 )
+                | (
+                    Command::SET,
+                    [
+                        TokenType::Register(_),
+                        TokenType::Number(0..=0xFF) | TokenType::Register(_)
+                    ]
+                )
+                | (
+                    Command::RAND,
+                    [TokenType::Register(_), TokenType::Number(0..=0xFF)]
+                )
+                | (
+                    Command::DRAW,
+                    [
+                        TokenType::Register(_),
+                        TokenType::Register(_),
+                        TokenType::Number(0..=0xF)
+                    ]
+                )
+                | (
+                    Command::OR
+                        | Command::AND
+                        | Command::XOR
+                        | Command::SUB
+                        | Command::SUBFROM
+                        | Command::SHL
+                        | Command::SHR,
+                    [TokenType::Register(_), TokenType::Register(_)]
+                )
+                | (
+                    Command::LOAD
+                        | Command::STORE
+                        | Command::ADDPTR
+                        | Command::SETPTRCHR
+                        | Command::SETPTRDEC
+                        | Command::GETDELAY
+                        | Command::GETKEY
+                        | Command::SETDELAY
+                        | Command::JMPEQKEY
+                        | Command::JMPNEKEY
+                        | Command::SETSOUND,
+                    [TokenType::Register(_)]
+                )
+                | (Command::POINT, [TokenType::Number(_) | TokenType::Label(_)])
         )
     }
 }
