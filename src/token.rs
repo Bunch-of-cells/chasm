@@ -74,16 +74,18 @@ impl Command {
             (self, args),
             (
                 Command::ADD,
-                [TokenType::Register(_), TokenType::Number(0..=0xFF)]
+                [TokenType::Register(_), TokenType::Register(_)]
             ) | (
-                Command::JMPNE,
+                Command::JMPNE | Command::ADD,
                 [
-                    TokenType::Register(_),
+                    TokenType::Number(0..=0xFF) | TokenType::Register(_),
                     TokenType::Number(0..=0xFF) | TokenType::Register(_)
                 ],
             ) | (Command::RET, [])
-                | (Command::CALL, [TokenType::Label(_)])
-                | (Command::JMP, [TokenType::Number(_)])
+                | (
+                    Command::CALL | Command::JMP,
+                    [TokenType::Label(_) | TokenType::Number(0..=0xFFF)]
+                )
         )
     }
 }

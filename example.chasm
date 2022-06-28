@@ -1,5 +1,3 @@
-%?#; Include loop yea
-%+ ; loop.chasm 
-%?-;
-
 main:
+    ADD v0 0xFF
+    RET

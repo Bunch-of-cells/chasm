@@ -14,6 +14,7 @@ fn main() {
 }
 
 mod exception;
+mod intruction;
 mod lexer;
 mod parser;
 mod token;

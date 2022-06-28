@@ -7,6 +7,7 @@ use std::{
 
 use crate::{
     exception::{FileException, NoMain, Result, SyntaxError, Undefined},
+    intruction::InstructionArg,
     lexer::lex,
     token::{Command, MprocessorDirective, Token, TokenType},
 };
@@ -70,11 +71,42 @@ impl Parser {
         Ok(())
     }
 
-    pub fn parse(&mut self) -> Result<&Vec<(Command, Vec<TokenType>)>> {
+    pub fn parse(&mut self) -> Result<Vec<(Command, Vec<InstructionArg>)>> {
         self.statements(Self::labels)?;
         self.current_token = 0;
         self.statements(Self::statement)?;
-        Ok(&self.instructions)
+        Ok(self.convert_instructions())
+    }
+
+    fn convert_instructions(&self) -> Vec<(Command, Vec<InstructionArg>)> {
+        let mut instructions = Vec::new();
+        instructions.push((
+            Command::CALL,
+            vec![InstructionArg::Label(self.labels["main"] as u16)],
+        ));
+        instructions.push((
+            Command::JMP,
+            vec![InstructionArg::Label((self.instructions.len() + 1) as u16)],
+        ));
+        for (cmd, args) in &self.instructions {
+            let mut new_args = Vec::new();
+            for arg in args {
+                match arg {
+                    TokenType::Register(r) => new_args.push(InstructionArg::Reg(*r)),
+                    TokenType::Number(n) => new_args.push(InstructionArg::Num(*n)),
+                    TokenType::Label(l) => {
+                        new_args.push(InstructionArg::Label(self.labels[l] as u16 + 2))
+                    }
+                    _ => unreachable!(),
+                }
+            }
+            instructions.push((cmd.clone(), new_args));
+        }
+        instructions.push((
+            Command::JMP,
+            vec![InstructionArg::Label((self.instructions.len() + 1) as u16)],
+        ));
+        instructions
     }
 
     fn labels(&mut self) -> Result<()> {
@@ -136,13 +168,8 @@ impl Parser {
             TokenType::Label(ref l) if !ignore => {
                 let l = l.clone();
                 if let Some(k) = self.labels.get_mut(&l) {
-                    *k = self.instructions.len();
+                    *k = self.instructions.len() + 1;
                     self.unassigned_label = Some(self.current_token);
-                } else {
-                    return Err(Box::new(Undefined(
-                        format!("label '{}' is not defined anywhere", l),
-                        self.current_token().position.clone(),
-                    )));
                 }
                 self.advance(); // colon
             }
@@ -260,6 +287,23 @@ impl Parser {
             self.current_token().token,
             TokenType::Comment(_) | TokenType::Eol | TokenType::Eof
         ) {
+            if !matches!(
+                self.current_token().token,
+                TokenType::Register(_) | TokenType::Label(_) | TokenType::Number(_)
+            ) {
+                return Err(Box::new(SyntaxError(
+                    "Expected a register, label, or number as an argument".to_string(),
+                    self.current_token().position.clone(),
+                )));
+            }
+            if let TokenType::Label(ref l) = self.current_token().token {
+                if !self.labels.contains_key(l) {
+                    return Err(Box::new(Undefined(
+                        format!("label '{}' is not defined anywhere", l),
+                        self.current_token().position.clone(),
+                    )));
+                }
+            }
             args.push(self.current_token().token.clone());
             self.advance();
         }
