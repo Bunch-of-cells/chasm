@@ -20,7 +20,6 @@ pub struct Parser {
     labels: HashMap<String, usize>,
     instructions: Vec<(Command, Vec<TokenType>)>,
     has_main: bool,
-    unassigned_label: Option<usize>,
 }
 
 impl Parser {
@@ -33,7 +32,6 @@ impl Parser {
             labels: HashMap::new(),
             instructions: Vec::new(),
             has_main: false,
-            unassigned_label: None,
         }
     }
 
@@ -62,12 +60,6 @@ impl Parser {
         if !self.has_main {
             return Err(Box::new(NoMain(self.current_token().position.file.clone())));
         }
-        if let Some(i) = self.unassigned_label {
-            return Err(Box::new(SyntaxError(
-                "Label points to nothing".to_string(),
-                self.tokens[i].position.clone(),
-            )));
-        }
         Ok(())
     }
 
@@ -91,6 +83,9 @@ impl Parser {
             for arg in args {
                 match arg {
                     TokenType::Register(r) => new_args.push(InstructionArg::Reg(*r)),
+                    TokenType::Number(n) if *cmd == Command::CHIP => {
+                        new_args.push(InstructionArg::Chip8(*n))
+                    }
                     TokenType::Number(n) => new_args.push(InstructionArg::Num(*n)),
                     TokenType::Label(l) => {
                         new_args.push(InstructionArg::Label(self.labels[l] as u16 + 2))
@@ -127,6 +122,7 @@ impl Parser {
                 ) {
                     self.advance();
                 }
+                self.current_token -= 1;
             }
             TokenType::Comment(_) => (),
             TokenType::Colon => {
@@ -163,7 +159,6 @@ impl Parser {
                 let l = l.clone();
                 if let Some(k) = self.labels.get_mut(&l) {
                     *k = self.instructions.len();
-                    self.unassigned_label = Some(self.current_token);
                 }
                 self.advance(); // colon
             }
@@ -309,9 +304,7 @@ impl Parser {
                 )));
             }
             self.instructions.push((c, args));
-            self.unassigned_label = None;
         }
-        self.advance();
         Ok(())
     }
 

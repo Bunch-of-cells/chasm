@@ -165,7 +165,7 @@ pub fn lex(input: &str, filename: Rc<String>) -> Result<Vec<Token>> {
                 let mut num = c.to_string();
                 let start = i;
                 let mut end = i + 1;
-                let mut base = 10;
+                let mut base = 16;
                 if c == '0' && chars.peek().is_some() {
                     match chars.peek().unwrap().1 {
                         'b' | 'B' => {
@@ -178,6 +178,10 @@ pub fn lex(input: &str, filename: Rc<String>) -> Result<Vec<Token>> {
                         }
                         'x' | 'X' => {
                             base = 16;
+                            chars.next();
+                        }
+                        'd' | 'D' => {
+                            base = 10;
                             chars.next();
                         }
                         _ => (),
@@ -194,12 +198,6 @@ pub fn lex(input: &str, filename: Rc<String>) -> Result<Vec<Token>> {
 
                 tokens.push(Token::new(
                     TokenType::Number(match u16::from_str_radix(&num, base) {
-                        Ok(num) if num > 0xFFF => {
-                            return Err(Box::new(NumberOverflow(
-                                format!("Number {} is too large", num),
-                                Position::new(line, (start, end), Rc::clone(&filename)),
-                            )))
-                        }
                         Ok(num) => num,
                         Err(err) => {
                             let pos = Position::new(line, (start, end), Rc::clone(&filename));
@@ -256,6 +254,13 @@ pub fn lex(input: &str, filename: Rc<String>) -> Result<Vec<Token>> {
                             .into_iter()
                             .find(|cmd| word == format!("{:?}", cmd))
                             .map(TokenType::Command)
+                    })
+                    .or_else(|| {
+                        if let Ok(n) = u16::from_str_radix(&word, 16) {
+                            Some(TokenType::Number(n))
+                        } else {
+                            None
+                        }
                     })
                     .or_else(|| {
                         if word.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {

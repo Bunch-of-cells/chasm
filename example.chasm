@@ -1,3 +1,40 @@
 main:
-    ADD v0 0xFF
+    CLR
+    POINT sprite1
+    SET v0 0xC
+    SET v1 0x8
+    DRAW v0 v1 0xF
+    ADD v0 0x9
+    POINT sprite2
+    DRAW v0 v1 0xF
+    POINT sprite3
+    ADD v0 0x8
+    DRAW v0 v1 0xF
+    ADD v0 0x4
+    POINT sprite4
+    DRAW v0 v1 0xF
+    ADD v0 0x8
+    POINT sprite5
+    DRAW v0 v1 0xF
+    ADD v0 0x8
+    POINT sprite6
+    DRAW v0 v1 0xF
     RET
+
+sprite1:
+    CHIP FF00 FF00 3C00 3C00 3C00 3C00 FF00 FF
+
+sprite2:
+    CHIP FF 00FF 0038 003F 003F 0038 00FF 00FF
+
+sprite3:
+    CHIP 8000 E000 E000 8000 8000 E000 E000 80
+
+sprite4:
+    CHIP F8 00FC 003E 003F 003B 0039 00F8 00F8
+
+sprite5:
+    CHIP 0300 0700 0F00 BF00 FB00 F300 E300 43
+
+sprite6:
+    CHIP E0 00E0 0080 0080 0080 0080 00E0 00E0

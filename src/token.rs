@@ -38,6 +38,7 @@ pub enum TokenType {
 #[derive(Debug, PartialEq, Clone)]
 #[allow(clippy::upper_case_acronyms)]
 pub enum Command {
+    CHIP,
     JMPNE,
     JMPEQ,
     JMP,
@@ -56,7 +57,7 @@ pub enum Command {
     SHR,
     SHL,
     LOAD,
-    STORE,
+    DUMP,
     POINT,
     ADDPTR,
     SETPTRCHR,
@@ -65,10 +66,10 @@ pub enum Command {
     GETKEY,
     SETDELAY,
     SETSOUND,
-
     OFFJMP,
     JMPEQKEY,
     JMPNEKEY,
+    SYSCALL,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -85,8 +86,9 @@ pub enum MprocessorDirective {
 }
 
 impl Command {
-    pub fn all() -> [Command; 30] {
+    pub fn all() -> [Command; 32] {
         [
+            Command::CHIP,
             Command::JMPNE,
             Command::JMPEQ,
             Command::JMP,
@@ -105,7 +107,7 @@ impl Command {
             Command::SHR,
             Command::SHL,
             Command::LOAD,
-            Command::STORE,
+            Command::DUMP,
             Command::POINT,
             Command::ADDPTR,
             Command::SETPTRCHR,
@@ -117,6 +119,7 @@ impl Command {
             Command::SETSOUND,
             Command::JMPEQKEY,
             Command::JMPNEKEY,
+            Command::SYSCALL,
         ]
     }
 
@@ -131,7 +134,7 @@ impl Command {
             ) | (Command::RET | Command::CLR, [])
                 | (
                     Command::CALL | Command::JMP | Command::OFFJMP,
-                    [TokenType::Label(_) | TokenType::Number(_)]
+                    [TokenType::Label(_) | TokenType::Number(0..=0xFFF)]
                 )
                 | (
                     Command::SET,
@@ -153,18 +156,12 @@ impl Command {
                     ]
                 )
                 | (
-                    Command::OR
-                        | Command::AND
-                        | Command::XOR
-                        | Command::SUB
-                        | Command::SUBFROM
-                        | Command::SHL
-                        | Command::SHR,
+                    Command::OR | Command::AND | Command::XOR | Command::SUB | Command::SUBFROM,
                     [TokenType::Register(_), TokenType::Register(_)]
                 )
                 | (
                     Command::LOAD
-                        | Command::STORE
+                        | Command::DUMP
                         | Command::ADDPTR
                         | Command::SETPTRCHR
                         | Command::SETPTRDEC
@@ -173,10 +170,16 @@ impl Command {
                         | Command::SETDELAY
                         | Command::JMPEQKEY
                         | Command::JMPNEKEY
+                        | Command::SHL
+                        | Command::SHR
                         | Command::SETSOUND,
                     [TokenType::Register(_)]
                 )
-                | (Command::POINT, [TokenType::Number(_) | TokenType::Label(_)])
-        )
+                | (
+                    Command::POINT,
+                    [TokenType::Number(0..=0xFFF) | TokenType::Label(_)]
+                )
+                | (Command::SYSCALL, [TokenType::Number(0..=0xFFF)])
+        ) || (*self == Command::CHIP && args.iter().all(|tt| matches!(tt, TokenType::Number(_))))
     }
 }
