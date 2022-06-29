@@ -254,7 +254,7 @@ pub fn lex(input: &str, filename: Rc<String>) -> Result<Vec<Token>> {
                         }
                     })
                     .or_else(|| {
-                        if word.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+                        if word.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-') {
                             Some(TokenType::Label(word.to_ascii_lowercase()))
                         } else {
                             None
