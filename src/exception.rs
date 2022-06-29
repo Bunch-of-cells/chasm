@@ -1,4 +1,5 @@
 use std::{
+    error,
     fmt::{Debug, Display},
     rc::Rc,
 };
@@ -51,6 +52,14 @@ impl Display for dyn Exception {
         write!(f, "{}", self.details())
     }
 }
+
+impl Debug for dyn Exception {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
+impl error::Error for dyn Exception {}
 
 pub struct NumberOverflow(pub String, pub Position);
 impl Exception for NumberOverflow {

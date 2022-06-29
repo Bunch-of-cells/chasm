@@ -9,7 +9,6 @@ use std::{num::IntErrorKind, rc::Rc};
 const LITERALS: &str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
 
 pub fn lex(input: &str, filename: Rc<String>) -> Result<Vec<Token>> {
-    println!("{}", input);
     let mut tokens = Vec::new();
     let mut chars = input.chars().enumerate().peekable();
     let mut line = 1;

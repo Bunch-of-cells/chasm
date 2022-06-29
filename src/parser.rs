@@ -19,6 +19,7 @@ pub struct Parser {
     defined: HashSet<String>,
     labels: HashMap<String, usize>,
     instructions: Vec<(Command, Vec<TokenType>)>,
+    instructions_len: usize,
     has_main: bool,
 }
 
@@ -31,6 +32,7 @@ impl Parser {
             defined: HashSet::new(),
             labels: HashMap::new(),
             instructions: Vec::new(),
+            instructions_len: 0,
             has_main: false,
         }
     }
@@ -71,6 +73,7 @@ impl Parser {
     }
 
     fn convert_instructions(&self) -> Vec<(Command, Vec<InstructionArg>)> {
+        println!("{:?}", self.labels);
         let mut instructions = vec![
             (
                 Command::CALL,
@@ -158,7 +161,7 @@ impl Parser {
             TokenType::Label(ref l) if !ignore => {
                 let l = l.clone();
                 if let Some(k) = self.labels.get_mut(&l) {
-                    *k = self.instructions.len();
+                    *k = self.instructions_len;
                 }
                 self.advance(); // colon
             }
@@ -302,6 +305,11 @@ impl Parser {
                     format!("Invalid arguments to command {:?}", c),
                     command.position.clone(),
                 )));
+            }
+            if c == Command::CHIP {
+                self.instructions_len += args.len();
+            } else {
+                self.instructions_len += 1;
             }
             self.instructions.push((c, args));
         }
