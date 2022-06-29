@@ -167,12 +167,19 @@ pub fn lex(input: &str, filename: Rc<String>) -> Result<Vec<Token>> {
                 let mut base = 16;
                 if c == '0' && chars.peek().is_some() {
                     match chars.peek().unwrap().1 {
-                        'b' => {
+                        'b' | 'B' => {
                             base = 2;
                             chars.next();
                         }
-                        'd' => {
+                        'd' | 'D' => {
                             base = 10;
+                            chars.next();
+                        }
+                        'o' | 'O' => {
+                            base = 8;
+                            chars.next();
+                        }
+                        'x' | 'X' => {
                             chars.next();
                         }
                         _ => (),
